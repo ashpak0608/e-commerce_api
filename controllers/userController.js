@@ -10,12 +10,16 @@ exports.signup = async (req, res) => {
     const user = await prisma.user.create({
       data: { name, email, password: hash }
     });
-    res.json(user);
+    res.status(201).json({
+      success: true,
+      data: user,
+      message: "User registered successfully"
+    });
   } catch (err) {
     if (err.code === 'P2002' && err.meta && err.meta.target.includes('email')) {
-      return res.status(400).json({ error: 'Email already exists. Please use a different email.' });
+      return res.status(400).json({ success: false, error: 'Email already exists.' });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
@@ -23,15 +27,20 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(401).json({ success: false, error: "Invalid email or password" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ error: 'Incorrect password' });
+    if (!match) return res.status(401).json({ success: false, error: "Invalid email or password" });
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, user });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({
+      success: true,
+      token,
+      user: { id: user.id, name: user.name, email: user.email }
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
@@ -43,9 +52,13 @@ exports.updateProfile = async (req, res) => {
       where: { id: userId },
       data: { name, contact, address }
     });
-    res.json(updatedUser);
+    res.json({
+      success: true,
+      data: updatedUser,
+      message: "Profile updated successfully"
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 
@@ -55,10 +68,10 @@ exports.changePassword = async (req, res) => {
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
     const match = await bcrypt.compare(oldPassword, user.password);
-    if (!match) return res.status(401).json({ error: 'Old password is incorrect' });
+    if (!match) return res.status(401).json({ success: false, error: 'Old password is incorrect' });
 
     const hash = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
@@ -66,27 +79,19 @@ exports.changePassword = async (req, res) => {
       data: { password: hash }
     });
 
-    res.json({ message: 'Password updated successfully' });
+    res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
-
 
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        contact: true,
-        address: true,
-        role: true
-      }
+      select: { id: true, name: true, email: true, contact: true, address: true, role: true }
     });
-    res.json(users);
+    res.json({ success: true, data: users });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
