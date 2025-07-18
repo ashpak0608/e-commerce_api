@@ -1,0 +1,19 @@
+ecommerce-backend/
+ ┣ controllers/
+ ┃ ┣ userController.js
+ ┃ ┗ productController.js
+ ┣ middleware/
+ ┃ ┗ authMiddleware.js
+ ┣ prisma/
+ ┃ ┗ schema.prisma
+ ┣ routes/
+ ┃ ┣ userRoutes.js
+ ┃ ┗ productRoutes.js
+ ┣ utils/
+ ┃ ┗ generateToken.js
+ ┣ app.js
+ ┣ server.js
+ ┣ .env
+ ┣ package.json
+ ┗ nodemon.json
+    
